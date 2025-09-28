@@ -6,10 +6,11 @@ const mongoose = require('mongoose');
 
 app.use(cors());
 app.use(express.static('public'));
-app.use(express.urlencoded({ extended: false })); // parse form data
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 // ==============================
-// MongoDB Atlas Connection
+// Conexión a MongoDB Atlas
 // ==============================
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
@@ -56,7 +57,7 @@ app.post('/api/users', async (req, res) => {
 // Listar todos los usuarios
 app.get('/api/users', async (req, res) => {
   try {
-    const users = await User.find({}, 'username _id');
+    const users = await User.find({}, 'username _id').lean();
     res.json(users);
   } catch (err) {
     res.json({ error: err.message });
@@ -80,11 +81,11 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
     const savedExercise = await exercise.save();
 
     res.json({
+      _id: user._id,
       username: user.username,
-      description: savedExercise.description,
-      duration: savedExercise.duration,
       date: savedExercise.date.toDateString(),
-      _id: user._id
+      duration: savedExercise.duration,
+      description: savedExercise.description
     });
   } catch (err) {
     res.json({ error: err.message });
@@ -109,9 +110,9 @@ app.get('/api/users/:_id/logs', async (req, res) => {
     const exercises = await query.exec();
 
     res.json({
+      _id: user._id,
       username: user.username,
       count: exercises.length,
-      _id: user._id,
       log: exercises.map(e => ({
         description: e.description,
         duration: e.duration,
@@ -122,7 +123,6 @@ app.get('/api/users/:_id/logs', async (req, res) => {
     res.json({ error: err.message });
   }
 });
-
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port);
